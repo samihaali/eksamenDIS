@@ -1,5 +1,6 @@
 package controllers;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,12 +33,12 @@ public class UserController {
       // Get first object, since we only have one
       if (rs.next()) {
         user =
-            new User(
-                rs.getInt("id"),
-                rs.getString("first_name"),
-                rs.getString("last_name"),
-                rs.getString("password"),
-                rs.getString("email"));
+                new User(
+                        rs.getInt("id"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("password"),
+                        rs.getString("email"));
 
         // return the create object
         return user;
@@ -75,12 +76,12 @@ public class UserController {
       // Loop through DB Data
       while (rs.next()) {
         User user =
-            new User(
-                rs.getInt("id"),
-                rs.getString("first_name"),
-                rs.getString("last_name"),
-                rs.getString("password"),
-                rs.getString("email"));
+                new User(
+                        rs.getInt("id"),
+                        rs.getString("first_name"),
+                        rs.getString("last_name"),
+                        rs.getString("password"),
+                        rs.getString("email"));
 
         // Add element to list
         users.add(user);
@@ -92,6 +93,30 @@ public class UserController {
     // Return the list of users
     return users;
   }
+
+  public static User updateUser(User user){
+
+
+    try {PreparedStatement updateUser = DatabaseController.getConnection().prepareStatement("UPDATE USER SET first_name=?, last_name=?, password=?, email=? WHERE id=?");
+
+      updateUser.setString(1, user.getFirstname());
+      updateUser.setString(2, user.getLastname());
+      updateUser.setString(3, user.getEmail());
+      updateUser.setString(4, user.getPassword());
+      updateUser.setInt(5, user.getId());
+
+      updateUser.executeUpdate();
+
+
+    }catch (SQLException sql){
+      sql.printStackTrace();
+    }
+    return user;
+
+    }
+
+
+
 
   public static User createUser(User user) {
 
