@@ -7,10 +7,6 @@ import org.bouncycastle.util.encoders.Hex;
 
 public final class Hashing {
 
-  private String salt = "hashing";
-  public void setSalt(String salt){this.salt = salt;}
-
-
   // TODO: You should add a salt and make this secure (FIX)
   public static String md5(String rawString) {
     try {
@@ -41,7 +37,8 @@ public final class Hashing {
     return null;
 
   }
-  public String addsaltMd5(String password){
+  public static String addsaltMd5(String password){
+    String salt = "hashing";
     String saltedPassword = password + salt;
     return md5(saltedPassword);
   }
@@ -67,7 +64,8 @@ public final class Hashing {
 
     return rawString;
   }
-  public String addsaltSha(String password){
+  public static String addsaltSha(String password){
+    String salt = "hashing";
     String saltedPassword = password + salt;
     return sha(saltedPassword);
   }

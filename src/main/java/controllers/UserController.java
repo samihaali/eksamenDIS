@@ -1,9 +1,15 @@
 package controllers;
 
+import java.security.AlgorithmConstraints;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTCreationException;
+import com.sun.org.apache.xml.internal.security.algorithms.JCEMapper;
 import model.User;
 import utils.Hashing;
 import utils.Log;
@@ -176,4 +182,52 @@ public class UserController {
     }
     return user;
   }
-}
+
+  public static String loginUser (User user){
+    if (dbCon == null){
+      dbCon = new DatabaseController();
+    }
+    ResultSet rs;
+    User userLogin;
+    String token = null;
+
+    try{
+      PreparedStatement loginUser = dbCon.getConnection().prepareStatement("SELECT  * FROM user WHERE email=? AND password=?");
+      loginUser.setString(1, user.getEmail());
+      loginUser.setString(2,Hashing.addsaltSha(user.getPassword()));
+
+      rs = loginUser.executeQuery();
+
+      if (rs.next()){
+        userLogin = new User(
+                rs.getInt("id"),
+                rs.getString("first name"),
+                rs.getString("last name"),
+                rs.getString("password"),
+                rs.getString("email"));
+
+        if (userLogin !=null){
+          try{
+            Algorithm algorithm = Algorithm.HMAC256("secret");
+            token = JWT.create().withClaim("userID",user.getId()).withIssuer("aut0").sign(algorithm);
+
+          }catch (JWTCreationException ex){
+
+          }finally {
+            return token;
+          }
+          }
+        }else {
+        System.out.println("User not found");
+      }
+      }catch (SQLException ex) {
+      ex.printStackTrace();
+
+    }
+      return "";
+      }
+
+
+
+  }
+
