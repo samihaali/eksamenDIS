@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.sun.org.apache.xml.internal.security.algorithms.JCEMapper;
 import model.User;
 import utils.Hashing;
@@ -101,24 +103,41 @@ public class UserController {
     return users;
   }
 
-  public static User updateUser(User user){
+  public static Boolean updateUser(User user, String token) {
 
-
-    try {PreparedStatement updateUser = DatabaseController.getConnection().prepareStatement("UPDATE USER SET first_name=?, last_name=?, password=?, email=? WHERE id=?");
-
-      updateUser.setString(1, user.getFirstname());
-      updateUser.setString(2, user.getLastname());
-      updateUser.setString(3, user.getEmail());
-      updateUser.setString(4, user.getPassword());
-      updateUser.setInt(5, user.getId());
-
-      updateUser.executeUpdate();
-
-
-    }catch (SQLException sql){
-      sql.printStackTrace();
+    if (dbCon == null) {
+      dbCon = new DatabaseController();
     }
-    return user;
+
+    try {
+      DecodedJWT jwt = JWT.decode(token);
+      int id = jwt.getClaim("userId").asInt();
+
+      try {
+        PreparedStatement updateUser = dbCon.getConnection().prepareStatement("UPDATE USER SET first_name=?, last_name=?, password=?, email=? WHERE id=?");
+
+        updateUser.setString(1, user.getFirstname());
+        updateUser.setString(2, user.getLastname());
+        updateUser.setString(3, user.getPassword());
+        updateUser.setString(4, user.getEmail());
+        updateUser.setInt(5, id);
+
+        int rowsAffected = updateUser.executeUpdate();
+
+        if (rowsAffected == 1) {
+          return true;
+        }
+
+
+      } catch (SQLException sql) {
+        sql.printStackTrace();
+      }
+
+    } catch(JWTDecodeException ex){
+      ex.printStackTrace();
+    }
+
+    return false;
 
     }
 
@@ -166,21 +185,33 @@ public class UserController {
     return user;
   }
 
-  public static User deleteUser (User user){
+  public static Boolean deleteUser (String token){
     if (dbCon == null){
       dbCon = new DatabaseController();
 
     }
-    try{
-      PreparedStatement deleteUser = dbCon.getConnection().prepareStatement("DELETE FROM user WHERE id = ?");
-      deleteUser.setInt( 1,user.getId());
-      deleteUser.executeUpdate();
+    try {
+      DecodedJWT jwt = JWT.decode(token);
+      int id = jwt.getClaim("userId").asInt();
 
-    }catch (SQLException sql){
-      sql.printStackTrace();
+      try {
+
+        PreparedStatement deleteUser = dbCon.getConnection().prepareStatement("DELETE FROM user WHERE id = ?");
+
+        deleteUser.setInt(1, id);
+        int rowsAffected = deleteUser.executeUpdate();
+        if (rowsAffected == 1) {
+          return true;
+        }
+
+      } catch (SQLException sql) {
+        sql.printStackTrace();
+      }
+    }catch (JWTDecodeException ex){
+      ex.printStackTrace();
 
     }
-    return user;
+    return false;
   }
 
   public static String loginUser (User user){
@@ -192,7 +223,7 @@ public class UserController {
     String token = null;
 
     try{
-      PreparedStatement loginUser = dbCon.getConnection().prepareStatement("SELECT  * FROM user WHERE email=? AND password=?");
+      PreparedStatement loginUser = dbCon.getConnection().prepareStatement("SELECT * FROM user WHERE email= ? AND password= ?");
       loginUser.setString(1, user.getEmail());
       loginUser.setString(2,Hashing.addsaltSha(user.getPassword()));
 
@@ -201,15 +232,18 @@ public class UserController {
       if (rs.next()){
         userLogin = new User(
                 rs.getInt("id"),
-                rs.getString("first name"),
-                rs.getString("last name"),
+                rs.getString("first_name"),
+                rs.getString("last_name"),
                 rs.getString("password"),
                 rs.getString("email"));
 
         if (userLogin !=null){
           try{
             Algorithm algorithm = Algorithm.HMAC256("secret");
-            token = JWT.create().withClaim("userID",user.getId()).withIssuer("aut0").sign(algorithm);
+            token = JWT.create()
+                    .withClaim("userId",userLogin.getId())
+                    .withIssuer("auth0")
+                    .sign(algorithm);
 
           }catch (JWTCreationException ex){
 
@@ -226,8 +260,5 @@ public class UserController {
     }
       return "";
       }
-
-
-
   }
 
