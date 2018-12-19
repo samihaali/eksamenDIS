@@ -135,13 +135,11 @@ public class UserEndpoints {
 
       User user1 = new Gson().fromJson(body, User.class);
 
-      Boolean updatedUser = UserController.updateUser(user1, token);
-
+      Boolean updatedUser = UserController.updateUser(user1,token);
 
       if (updatedUser) {
         return Response.status(200).type(MediaType.APPLICATION_JSON_TYPE).entity("User is updated").build();
       } else {
-
         // Return a response with status 200 and JSON as type
         return Response.status(400).entity("It was not possible to update user ").build();
       }

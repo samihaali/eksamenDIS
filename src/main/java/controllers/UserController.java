@@ -11,6 +11,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.cbsexam.UserEndpoints;
 import com.sun.org.apache.xml.internal.security.algorithms.JCEMapper;
 import model.User;
 import utils.Hashing;
@@ -47,7 +48,8 @@ public class UserController {
                         rs.getString("first_name"),
                         rs.getString("last_name"),
                         rs.getString("password"),
-                        rs.getString("email"));
+                        rs.getString("email"),
+                        rs.getLong("created_at"));
 
         // return the create object
         return user;
@@ -90,7 +92,8 @@ public class UserController {
                         rs.getString("first_name"),
                         rs.getString("last_name"),
                         rs.getString("password"),
-                        rs.getString("email"));
+                        rs.getString("email"),
+                        rs.getLong("created_at"));
 
         // Add element to list
         users.add(user);
@@ -114,7 +117,7 @@ public class UserController {
       int id = jwt.getClaim("userId").asInt();
 
       try {
-        PreparedStatement updateUser = dbCon.getConnection().prepareStatement("UPDATE USER SET first_name=?, last_name=?, password=?, email=? WHERE id=?");
+        PreparedStatement updateUser = dbCon.getConnection().prepareStatement("UPDATE user SET first_name=?, last_name=?, password=?, email=? WHERE id=?");
 
         updateUser.setString(1, user.getFirstname());
         updateUser.setString(2, user.getLastname());
@@ -125,9 +128,9 @@ public class UserController {
         int rowsAffected = updateUser.executeUpdate();
 
         if (rowsAffected == 1) {
+          UserEndpoints.userCache.getUsers(true);
           return true;
         }
-
 
       } catch (SQLException sql) {
         sql.printStackTrace();
@@ -140,8 +143,6 @@ public class UserController {
     return false;
 
     }
-
-
 
 
   public static User createUser(User user) {
